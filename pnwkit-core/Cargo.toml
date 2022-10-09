@@ -1,0 +1,39 @@
+[package]
+name = "pnwkit-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.serde]
+version = "1.0"
+
+[dependencies.serde_json]
+version = "1.0"
+
+[dependencies.dashmap]
+version = "5.3"
+features = ["serde"]
+
+[dependencies.async-trait]
+version = "0.1"
+
+[dependencies.tokio]
+version = "1.20"
+optional = true
+features = ["sync", "time"]
+
+[dependencies.serde_urlencoded]
+version = "0.7"
+optional = true
+
+[dev-dependencies]
+criterion = "0.4.0"
+
+[[bench]]
+name = "pnwkit"
+harness = false
+
+[features]
+default = []
+async = ["dep:tokio"]
+sync = []
+subscriptions = ["dep:tokio", "dep:serde_urlencoded"]

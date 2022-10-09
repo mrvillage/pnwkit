@@ -1,0 +1,5 @@
+[workspace]
+members = [
+	"pnwkit-core",
+    "pnwkit-rs",
+]
