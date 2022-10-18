@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, future::Future, pin::Pin, sync::Arc};
+
+use tokio::sync::{Mutex, RwLock};
 
 use crate::{event::Event, Object};
 
@@ -62,14 +64,41 @@ impl ToString for SubscriptionEvent {
     }
 }
 
-pub type SubscriptionCallback = Box<dyn Fn(Object) + Send + Sync>;
+pub type SubscriptionCallback = fn(&Object) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>;
 
 pub struct Subscription {
     pub(crate) model: SubscriptionModel,
     pub(crate) event: SubscriptionEvent,
     pub(crate) filters: Object,
-    pub(crate) channel: String,
+    pub channel: Mutex<String>,
     pub succeeded: Event,
+    pub callbacks: Arc<RwLock<Vec<SubscriptionCallback>>>,
+}
+
+impl Subscription {
+    pub fn new(
+        model: SubscriptionModel,
+        event: SubscriptionEvent,
+        filters: Object,
+        channel: String,
+    ) -> Self {
+        Self {
+            model,
+            event,
+            filters,
+            channel: Mutex::new(channel),
+            succeeded: Event::new(),
+            callbacks: Arc::new(RwLock::new(Vec::new())),
+        }
+    }
+
+    pub async fn add_callback(&self, callback: SubscriptionCallback) {
+        self.callbacks.write().await.push(callback);
+    }
+
+    pub(crate) async fn set_channel(&self, channel: String) {
+        *self.channel.lock().await = channel;
+    }
 }
 
 impl Debug for Subscription {
@@ -78,7 +107,6 @@ impl Debug for Subscription {
             .field("model", &self.model)
             .field("event", &self.event)
             .field("filters", &self.filters)
-            .field("channel", &self.channel)
             .finish()
     }
 }

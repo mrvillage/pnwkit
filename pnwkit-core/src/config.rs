@@ -1,7 +1,10 @@
 #[cfg(feature = "async")]
 use std::{future::Future, pin::Pin};
 
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 #[cfg(feature = "subscriptions")]
 use crate::socket::Socket;
@@ -10,31 +13,45 @@ use crate::{
     request::{Client, Headers},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Config {
-    pub(crate) api_key: String,
-    pub(crate) verified_bot_key: Option<String>,
-    pub(crate) verified_bot_key_api_key: Option<String>,
-    pub(crate) api_url: String,
+    pub api_key: String,
+    pub verified_bot_key: Option<String>,
+    pub verified_bot_key_api_key: Option<String>,
+    pub api_url: String,
     #[cfg(feature = "subscriptions")]
-    pub(crate) socket_url: String,
+    pub socket_url: String,
     #[cfg(feature = "subscriptions")]
-    pub(crate) subscribe_url: String,
+    pub subscribe_url: String,
     #[cfg(feature = "subscriptions")]
-    pub(crate) subscription_auth_url: String,
-    pub(crate) rate_limiter: Arc<Mutex<RateLimiter>>,
+    pub subscription_auth_url: String,
+    pub rate_limiter: Arc<Mutex<RateLimiter>>,
     #[cfg(feature = "subscriptions")]
-    pub(crate) socket: Box<dyn Socket>,
-    pub(crate) client: Box<dyn Client>,
-    pub(crate) headers: Headers,
-    now: fn() -> u64,
+    pub socket: Box<dyn Socket>,
+    pub client: Box<dyn Client>,
+    pub headers: Headers,
+    pub now: fn() -> u64,
     #[cfg(feature = "async")]
-    pub(crate) sleep: fn(u64) -> Pin<Box<dyn Future<Output = ()>>>,
+    pub sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()>>>,
     #[cfg(feature = "sync")]
-    pub(crate) sleep_sync: fn(u64) -> (),
+    pub sleep_sync: fn(Duration) -> (),
+    pub user_agent: String,
 }
 
 impl Config {
+    pub fn update_headers(&mut self) -> &mut Self {
+        self.headers
+            .set_authorization(format!("Bearer {}", self.api_key));
+        if let Some(verified_bot_key) = &self.verified_bot_key {
+            self.headers.set_x_bot_key(verified_bot_key.clone());
+        }
+        if let Some(verified_bot_key_api_key) = &self.verified_bot_key_api_key {
+            self.headers.set_x_api_key(verified_bot_key_api_key.clone());
+        }
+        self.headers.set_user_agent(self.user_agent.clone());
+        self
+    }
+
     pub fn set_api_key(&mut self, api_key: String) -> &mut Self {
         self.api_key = api_key;
         self.headers
@@ -99,14 +116,22 @@ impl Config {
     }
 
     #[cfg(feature = "async")]
-    pub fn set_sleep(&mut self, sleep: fn(u64) -> Pin<Box<dyn Future<Output = ()>>>) -> &mut Self {
+    pub fn set_sleep(
+        &mut self,
+        sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()>>>,
+    ) -> &mut Self {
         self.sleep = sleep;
         self
     }
 
     #[cfg(feature = "sync")]
-    pub fn set_sleep_sync(&mut self, sleep_sync: fn(u64) -> ()) -> &mut Self {
+    pub fn set_sleep_sync(&mut self, sleep_sync: fn(Duration) -> ()) -> &mut Self {
         self.sleep_sync = sleep_sync;
+        self
+    }
+
+    pub fn set_user_agent(&mut self, user_agent: String) -> &mut Self {
+        self.user_agent = user_agent;
         self
     }
 }

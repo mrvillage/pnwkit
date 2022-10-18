@@ -13,13 +13,23 @@ features = ["rustls-tls"]
 optional = true
 default-features = false
 
-[dependencies.async-tungstenite]
+[dependencies.tokio-tungstenite]
 version = "0.17"
-features = ["tokio-native-tls"]
+features = ["native-tls"]
 optional = true
+
+[dependencies.tokio]
+version = "1.20"
+optional = true
+features = ["time"]
+
+[dependencies.futures-util]
+version = "0.3"
+optional = true
+features = []
 
 [features]
 default = []
-async = ["reqwest", "pnwkit-core/async"]
+async = ["reqwest", "pnwkit-core/async", "dep:tokio"]
 sync = ["reqwest", "reqwest/blocking", "pnwkit-core/sync"]
-subscriptions = ["reqwest", "pnwkit-core/subscriptions", "dep:async-tungstenite"]
+subscriptions = ["reqwest", "pnwkit-core/subscriptions", "dep:tokio-tungstenite", "dep:tokio", "dep:futures-util"]

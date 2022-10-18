@@ -1,9 +1,6 @@
-use dashmap::DashMap;
 use serde_json::json;
 #[cfg(feature = "subscriptions")]
 use std::{sync::Arc, time::Duration};
-#[cfg(feature = "subscriptions")]
-use tokio::sync::RwLock;
 
 use crate::{
     data::QueryReturn,
@@ -16,7 +13,6 @@ use crate::{
 #[cfg(feature = "subscriptions")]
 use crate::{
     data::SubscriptionAuthData,
-    event::Event,
     subscription::{Subscription, SubscriptionEvent, SubscriptionModel},
     to_query_string::ToQueryString,
     Object,
@@ -27,20 +23,14 @@ type GetResult = Result<Data, String>;
 #[cfg(feature = "subscriptions")]
 type SubscriptionResult = Result<Arc<Subscription>, String>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Kit {
-    config: Config,
-    #[cfg(feature = "subscriptions")]
-    pub(crate) subscriptions: Arc<RwLock<DashMap<String, Arc<Subscription>>>>,
+    pub config: Config,
 }
 
 impl Kit {
     pub fn new(config: Config) -> Self {
-        Self {
-            config,
-            #[cfg(feature = "subscriptions")]
-            subscriptions: Arc::new(RwLock::new(DashMap::new())),
-        }
+        Self { config }
     }
 
     #[cfg(feature = "async")]
@@ -111,7 +101,7 @@ impl Kit {
             loop {
                 let wait = self.hit();
                 if wait > 0 {
-                    (self.config.sleep)(wait).await;
+                    (self.config.sleep)(Duration::from_secs(wait)).await;
                 } else {
                     break;
                 }
@@ -124,7 +114,7 @@ impl Kit {
             let response = response.unwrap();
             if response.status == 429 {
                 let wait = self.handle_429(response.x_ratelimit_reset);
-                (self.config.sleep)(wait).await;
+                (self.config.sleep)(Duration::from_secs(wait)).await;
             }
             return self.parse_response(response);
         }
@@ -143,7 +133,7 @@ impl Kit {
             loop {
                 let wait = self.hit();
                 if wait > 0 {
-                    (self.config.sleep_sync)(wait);
+                    (self.config.sleep_sync)(Duration::from_secs(wait));
                 } else {
                     break;
                 }
@@ -156,7 +146,7 @@ impl Kit {
             let response = response.unwrap();
             if response.status == 429 {
                 let wait = self.handle_429(response.x_ratelimit_reset);
-                (self.config.sleep_sync)(wait);
+                (self.config.sleep_sync)(Duration::from_secs(wait));
             }
             return self.parse_response(response);
         }
@@ -236,7 +226,7 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     pub async fn subscribe(
-        &self,
+        &'static self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
     ) -> SubscriptionResult {
@@ -245,7 +235,7 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     pub async fn subscribe_with_filters(
-        &self,
+        &'static self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
         filters: Object,
@@ -255,56 +245,72 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     async fn subscribe_inner(
-        &self,
+        &'static self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
         filters: Object,
     ) -> SubscriptionResult {
+        self.config.socket.init(self).await;
         let channel = self
             .request_subscription_channel(&model, &event, &filters)
             .await;
         if let Err(e) = channel {
             return Err(e);
         }
-        let mut channel = channel.unwrap();
 
+        let subscription = Subscription::new(model, event, filters, channel.unwrap());
+
+        self.subscribe_request(subscription).await
+    }
+
+    #[cfg(feature = "subscriptions")]
+    async fn subscribe_request(&'static self, subscription: Subscription) -> SubscriptionResult {
+        if self.config.socket.get_connected().is_set().await {
+            let res = self.config.socket.connect(&self.config.socket_url).await;
+            if let Err(e) = res {
+                return Err(e);
+            }
+        }
+
+        let mut channel = { subscription.channel.lock().await.clone() };
         let auth = self.authorize_subscription(&channel).await;
         if let Err(e) = &auth {
-            if e == "authorized" {
+            if e == "unauthorized" {
                 let res = self
-                    .request_subscription_channel(&model, &event, &filters)
+                    .request_subscription_channel(
+                        &subscription.model,
+                        &subscription.event,
+                        &subscription.filters,
+                    )
                     .await;
                 if let Err(e) = res {
                     return Err(e);
                 }
                 channel = res.unwrap();
+                subscription.set_channel(channel.clone()).await;
+                let auth = self.authorize_subscription(&channel).await;
+                if let Err(e) = &auth {
+                    return Err(e.clone());
+                }
             }
         }
         let auth = auth.unwrap();
 
-        let subscription = Arc::new(Subscription {
-            model,
-            event,
-            filters,
-            channel,
-            succeeded: Event::new(),
-        });
-
-        // wrapped in a block to make sure the lock is dropped immediately
-        {
-            self.subscriptions
-                .write()
-                .await
-                .insert(subscription.channel.clone(), subscription.clone());
-        }
+        let subscription = Arc::new(subscription);
+        self.config
+            .socket
+            .add_subscription(subscription.clone())
+            .await;
 
         let send = self.config.socket.send(
-            "pusher:subscribe".into(),
-            serde_urlencoded::to_string([
-                ("auth", auth),
-                ("channel", subscription.channel.clone()),
-            ])
-            .unwrap(),
+            json!({
+                "event": "pusher:subscribe",
+                "data": {
+                    "channel": channel,
+                    "auth": auth.clone(),
+                }
+            })
+            .to_string(),
         );
 
         if let Err(e) = send.await {
@@ -314,12 +320,10 @@ impl Kit {
         let timeout =
             tokio::time::timeout(Duration::from_secs(60), subscription.succeeded.wait()).await;
         if timeout.is_err() {
-            {
-                self.subscriptions
-                    .write()
-                    .await
-                    .remove(&subscription.channel);
-            }
+            self.config
+                .socket
+                .remove_subscription(subscription.clone())
+                .await;
             return Err("timed out waiting for subscription to succeed".to_string());
         }
 
@@ -356,7 +360,7 @@ impl Kit {
         );
         let response = self.config.client.request(&request).await;
         if let Err(err) = response {
-            Err(err.to_string())
+            Err(err)
         } else {
             let response = response.unwrap();
             let json: serde_json::Value = serde_json::from_str(&response.body).unwrap();
@@ -378,7 +382,7 @@ impl Kit {
             self.config.subscription_auth_url.clone(),
             Some(
                 serde_urlencoded::to_string([
-                    ("socket_id", self.config.socket.get_socket_id()),
+                    ("socket_id", self.config.socket.get_socket_id().await),
                     ("channel_name", channel.to_owned()),
                 ])
                 .unwrap(),
@@ -388,11 +392,11 @@ impl Kit {
         );
         let response = self.config.client.request(&request).await;
         if let Err(e) = response {
-            return Err(e.to_string());
+            return Err(e);
         }
         let response = response.unwrap();
         if response.status != 200 {
-            return Err("authorized".into());
+            return Err("unauthorized".into());
         }
         let data = serde_json::from_str::<SubscriptionAuthData>(&response.body).unwrap();
         Ok(data.auth)

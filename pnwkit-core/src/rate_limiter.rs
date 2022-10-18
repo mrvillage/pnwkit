@@ -9,6 +9,17 @@ pub struct RateLimiter {
 }
 
 impl RateLimiter {
+    pub fn new(now: fn() -> u64) -> Self {
+        Self {
+            limit: 0,
+            remaining: 0,
+            reset: 0,
+            interval: 0,
+            init: false,
+            now,
+        }
+    }
+
     fn now(&self) -> u64 {
         (self.now)()
     }

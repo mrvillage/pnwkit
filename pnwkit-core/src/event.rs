@@ -1,12 +1,14 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use tokio::sync::{Notify, RwLock};
 
+#[derive(Debug)]
 pub struct Event {
     pub(crate) state: RwLock<EventInner>,
     pub(crate) notify: Arc<Notify>,
 }
 
+#[derive(Debug)]
 pub struct EventInner(bool);
 
 impl Event {
@@ -41,6 +43,10 @@ impl Event {
     pub async fn clear(&self) {
         let mut state = self.state.write().await;
         state.0 = false;
+    }
+
+    pub async fn is_set(&self) -> bool {
+        self.state.read().await.0
     }
 }
 

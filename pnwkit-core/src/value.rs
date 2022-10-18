@@ -26,7 +26,7 @@ impl<'de> Deserialize<'de> for Value {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 struct ValueVisitor {}
 
 impl ValueVisitor {
@@ -176,6 +176,13 @@ impl Value {
     pub fn as_string(&self) -> Option<String> {
         match self {
             Value::String(v) => Some(v.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::String(v) => Some(v),
             _ => None,
         }
     }

@@ -19,7 +19,7 @@ version = "0.1"
 [dependencies.tokio]
 version = "1.20"
 optional = true
-features = ["sync", "time"]
+features = ["sync"]
 
 [dependencies.serde_urlencoded]
 version = "0.7"

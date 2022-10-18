@@ -1,8 +1,6 @@
 use async_trait::async_trait;
 use std::fmt::Debug;
 
-use crate::clone_box;
-
 #[derive(Debug, Clone)]
 pub struct Request {
     pub method: Method,
@@ -41,9 +39,10 @@ pub enum Method {
 
 #[derive(Debug, Default, Clone)]
 pub struct Headers {
-    authorization: String,
-    x_api_key: Option<String>,
-    x_bot_key: Option<String>,
+    pub authorization: String,
+    pub x_api_key: Option<String>,
+    pub x_bot_key: Option<String>,
+    pub user_agent: String,
 }
 
 impl Headers {
@@ -61,6 +60,10 @@ impl Headers {
 
     pub(crate) fn set_x_bot_key(&mut self, x_bot_key: String) {
         self.x_bot_key = Some(x_bot_key);
+    }
+
+    pub(crate) fn set_user_agent(&mut self, user_agent: String) {
+        self.user_agent = user_agent;
     }
 }
 
@@ -102,16 +105,13 @@ impl Response {
     }
 }
 
-pub type ResponseError = Box<dyn std::error::Error + Send + Sync>;
-pub type ResponseResult = Result<Response, ResponseError>;
+pub type ResponseResult = Result<Response, String>;
 
 #[async_trait]
-pub trait Client: Debug + ClientClone {
+pub trait Client: Debug + Send + Sync + 'static {
     #[cfg(any(feature = "async", feature = "subscriptions"))]
     async fn request(&self, request: &Request) -> ResponseResult;
 
     #[cfg(feature = "sync")]
     fn request_sync(&self, request: &Request) -> ResponseResult;
 }
-
-clone_box!(Client, ClientClone);
