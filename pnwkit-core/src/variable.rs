@@ -24,9 +24,9 @@ impl Serialize for Variable {
     }
 }
 
-pub fn variable(name: String, variable_type: VariableType) -> Variable {
+pub fn variable(name: &str, variable_type: VariableType) -> Variable {
     Variable {
-        name,
+        name: name.into(),
         variable_type,
     }
 }
@@ -55,6 +55,9 @@ impl Variables {
     }
 
     pub fn set(&self, name: String, value: Value) -> &Self {
+        if self.0.contains_key(&name) {
+            self.0.remove(&name);
+        }
         self.0.insert(name, value);
         self
     }
@@ -73,6 +76,13 @@ impl Variables {
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn page_init(&self) {
+        if self.0.contains_key("__page") {
+            return;
+        }
+        self.set("__page".into(), Value::Int(1));
     }
 }
 

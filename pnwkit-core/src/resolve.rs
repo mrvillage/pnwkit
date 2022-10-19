@@ -10,10 +10,16 @@ pub(crate) trait Resolve {
 
 impl Resolve for Query {
     fn resolve(&self) -> String {
+        let mut vars = self.get_variables();
+        if self.fields.iter().any(|f| f.tree_will_paginate())
+            && !vars.iter().any(|v| v.name == "__page")
+        {
+            vars.push(variable("__page", VariableType::Int));
+        }
         format!(
             "{}{} {{ {} }}",
             self.query_type.resolve(),
-            self.get_variables().resolve(),
+            vars.resolve(),
             self.fields
                 .iter()
                 .map(|f| f.resolve())
@@ -50,7 +56,7 @@ impl Resolve for QueryType {
 
 impl Resolve for Field {
     fn resolve(&self) -> String {
-        let name = if self.paginate {
+        let name = if self.paginate_name {
             format!("__paginate:{}", self.name)
         } else if let Some(alias) = &self.alias {
             format!("{}:{}", alias, self.name)
@@ -64,10 +70,10 @@ impl Resolve for Field {
         } else {
             self.fields.resolve()
         };
-        if self.paginate && !self.arguments.contains_key("__page") {
+        if self.paginate && !self.arguments.contains_key("page") {
             self.arguments.insert(
-                "__page".into(),
-                Value::Variable(variable("page".into(), VariableType::Int)),
+                "page".into(),
+                Value::Variable(variable("__page", VariableType::Int)),
             );
         };
         let arguments = self.arguments.resolve();

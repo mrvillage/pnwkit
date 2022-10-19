@@ -14,31 +14,48 @@ pub struct Field {
     pub(crate) arguments: Object,
     pub(crate) fields: Vec<FieldType>,
     pub(crate) paginate: bool,
+    pub(crate) paginate_name: bool,
 }
 
 impl Field {
-    pub fn set_name(&mut self, name: String) -> &mut Self {
+    pub fn set_name(mut self, name: String) -> Self {
         self.name = name;
         self
     }
 
-    pub fn set_alias(&mut self, alias: String) -> &mut Self {
+    pub fn set_alias(mut self, alias: String) -> Self {
         self.alias = Some(alias);
         self
     }
 
-    pub fn set_argument(&mut self, name: String, value: Value) -> &mut Self {
+    pub fn set_argument(self, name: String, value: Value) -> Self {
         self.arguments.insert(name, value);
         self
     }
 
-    pub fn add_field(&mut self, field: FieldType) -> &mut Self {
+    pub fn add_field(mut self, field: FieldType) -> Self {
         self.fields.push(field);
         self
     }
 
-    pub fn set_paginate(&mut self, paginate: bool) -> &mut Self {
-        self.paginate = paginate;
+    pub fn add_field_node(mut self, field: Field) -> Self {
+        self.fields.push(FieldType::Node(field));
+        self
+    }
+
+    pub fn add_field_leaf(mut self, field: &str) -> Self {
+        self.fields.push(FieldType::Leaf(field.into()));
+        self
+    }
+
+    pub fn will_paginate(mut self) -> Self {
+        self.paginate = true;
+        self.paginate_name = true;
+        self
+    }
+
+    pub fn is_paginated(mut self) -> Self {
+        self.paginate = true;
         self
     }
 
@@ -58,6 +75,23 @@ impl Field {
         vars
     }
 
+    pub(crate) fn tree_will_paginate(&self) -> bool {
+        if self.paginate {
+            return true;
+        }
+        for field in &self.fields {
+            match field {
+                FieldType::Node(field) => {
+                    if field.tree_will_paginate() {
+                        return true;
+                    }
+                },
+                FieldType::Leaf(_) => {},
+            }
+        }
+        false
+    }
+
     pub(crate) fn valid(&self) -> Result<(), String> {
         if self.name.is_empty() {
             return Err("Field name cannot be empty".into());
@@ -74,16 +108,17 @@ impl Default for Field {
             arguments: DashMap::new(),
             fields: Vec::new(),
             paginate: false,
+            paginate_name: false,
         }
     }
 }
 
-pub fn field(name: String) -> Field {
-    Field::default().set_name(name).to_owned()
+pub fn field(name: &str) -> Field {
+    Field::default().set_name(name.into())
 }
 
-pub fn field_as(name: String, alias: String) -> Field {
-    let mut field = Field::default();
-    field.set_name(name).set_alias(alias);
-    field
+pub fn field_as(name: &str, alias: &str) -> Field {
+    Field::default()
+        .set_name(name.into())
+        .set_alias(alias.into())
 }

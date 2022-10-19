@@ -24,7 +24,7 @@ pub use config::Config;
 pub use dashmap::DashMap;
 pub use data::{Data, Object};
 pub use event::Event;
-pub use field::{field, field_as, Field};
+pub use field::{field, field_as, Field, FieldType};
 pub use kit::Kit;
 pub use paginator::Paginator;
 pub use rate_limiter::RateLimiter;

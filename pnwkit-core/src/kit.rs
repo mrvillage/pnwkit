@@ -173,19 +173,28 @@ impl Kit {
             }
         }
         let body = match variables {
-            Some(vars) => json!({
-                "query": query.resolve(),
-                "variables": vars,
-            }),
-            None => json!({
-                "query": query.resolve(),
-            }),
-        };
-        let method = Method::Get;
+            Some(vars) => {
+                vars.page_init();
+                json!({
+                    "query": query.resolve(),
+                    "variables": vars,
+                })
+            },
+            None => {
+                let vars = Variables::with_capacity(1);
+                vars.page_init();
+                json!({
+                    "query": query.resolve(),
+                    "variables": vars,
+                })
+            },
+        }
+        .to_string();
+        let method = Method::Post;
         Ok(Request::new(
             method,
             self.config.api_url.clone(),
-            Some(serde_json::to_string(&body).unwrap()),
+            Some(body),
             Some(self.config.headers.clone()),
             Some(ContentType::Json),
         ))

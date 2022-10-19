@@ -31,50 +31,52 @@ impl Config {
             api_key: String::new(),
             verified_bot_key: None,
             verified_bot_key_api_key: None,
-            api_url: String::new(),
+            api_url: "https://api.politicsandwar.com/graphql".into(),
             #[cfg(feature = "subscriptions")]
-            socket_url: String::new(),
+            socket_url: "wss://socket.politicsandwar.com/app/a22734a47847a64386c8?protocol=7"
+                .into(),
             #[cfg(feature = "subscriptions")]
-            subscribe_url: String::new(),
+            subscribe_url:
+                "https://api.politicsandwar.com/subscriptions/v1/subscribe/{model}/{event}".into(),
             #[cfg(feature = "subscriptions")]
-            subscription_auth_url: String::new(),
+            subscription_auth_url: "https://api.politicsandwar.com/subscriptions/v1/auth".into(),
         }
     }
 
-    pub fn set_api_key(&mut self, api_key: String) -> &mut Self {
+    pub fn set_api_key(mut self, api_key: String) -> Self {
         self.api_key = api_key;
         self
     }
 
-    pub fn set_verified_bot_key(&mut self, verified_bot_key: String) -> &mut Self {
+    pub fn set_verified_bot_key(mut self, verified_bot_key: String) -> Self {
         self.verified_bot_key = Some(verified_bot_key);
         self
     }
 
-    pub fn set_verified_bot_key_api_key(&mut self, verified_bot_key_api_key: String) -> &mut Self {
+    pub fn set_verified_bot_key_api_key(mut self, verified_bot_key_api_key: String) -> Self {
         self.verified_bot_key_api_key = Some(verified_bot_key_api_key);
         self
     }
 
-    pub fn set_api_url(&mut self, api_url: String) -> &mut Self {
+    pub fn set_api_url(mut self, api_url: String) -> Self {
         self.api_url = api_url;
         self
     }
 
     #[cfg(feature = "subscriptions")]
-    pub fn set_socket_url(&mut self, socket_url: String) -> &mut Self {
+    pub fn set_socket_url(mut self, socket_url: String) -> Self {
         self.socket_url = socket_url;
         self
     }
 
     #[cfg(feature = "subscriptions")]
-    pub fn set_subscribe_url(&mut self, subscriptions_url: String) -> &mut Self {
+    pub fn set_subscribe_url(mut self, subscriptions_url: String) -> Self {
         self.subscribe_url = subscriptions_url;
         self
     }
 
     #[cfg(feature = "subscriptions")]
-    pub fn set_subscription_auth_url(&mut self, subscription_auth_url: String) -> &mut Self {
+    pub fn set_subscription_auth_url(mut self, subscription_auth_url: String) -> Self {
         self.subscription_auth_url = subscription_auth_url;
         self
     }
@@ -103,7 +105,8 @@ impl Config {
             #[cfg(feature = "sync")]
             sleep_sync: std::thread::sleep,
             user_agent: format!("pnwkit-rs/{}", env!("CARGO_PKG_VERSION")),
-        };
+        }
+        .update_headers();
         Kit::new(config)
     }
 }

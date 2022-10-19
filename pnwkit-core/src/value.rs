@@ -5,7 +5,7 @@ use crate::{
     Variable,
 };
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum Value {
     None,
     Bool(bool),
@@ -50,6 +50,20 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(v.into())
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(v.into())
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
@@ -103,6 +117,24 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 }
 
+impl Serialize for Value {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Value::None => serializer.serialize_none(),
+            Value::Bool(b) => serializer.serialize_bool(*b),
+            Value::Int(i) => serializer.serialize_i32(*i),
+            Value::Float(f) => serializer.serialize_f64(*f),
+            Value::String(s) => serializer.serialize_str(s),
+            Value::Variable(v) => v.serialize(serializer),
+            Value::Object(o) => o.serialize(serializer),
+            Value::Array(a) => a.serialize(serializer),
+        }
+    }
+}
+
 impl From<bool> for Value {
     fn from(v: bool) -> Self {
         Self::Bool(v)
@@ -112,6 +144,18 @@ impl From<bool> for Value {
 impl From<i32> for Value {
     fn from(v: i32) -> Self {
         Self::Int(v)
+    }
+}
+
+impl From<i64> for Value {
+    fn from(v: i64) -> Self {
+        Self::Int(v as i32)
+    }
+}
+
+impl From<u64> for Value {
+    fn from(v: u64) -> Self {
+        Self::Int(v as i32)
     }
 }
 
