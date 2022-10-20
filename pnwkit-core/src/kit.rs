@@ -14,9 +14,7 @@ use crate::{
     Object, Value,
 };
 use serde_json::json;
-use std::sync::Arc;
-#[cfg(feature = "subscriptions")]
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 type GetResult = Result<Data, String>;
 
