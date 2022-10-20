@@ -9,6 +9,7 @@ description = "pnwkit bindings for Rust."
 [dependencies.pnwkit-core]
 path = "../pnwkit-core"
 default-features = false
+version = "0.1.0-alpha"
 
 [dependencies.reqwest]
 version = "0.11"
