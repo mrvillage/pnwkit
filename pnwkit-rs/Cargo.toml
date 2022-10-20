@@ -1,7 +1,9 @@
 [package]
 name = "pnwkit"
-version = "0.1.0"
+version = "3.0.0-alpha.1"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/mrvillage/pnwkit"
 
 [dependencies.pnwkit-core]
 path = "../pnwkit-core"
