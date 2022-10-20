@@ -37,6 +37,7 @@ impl ToReqwestMethod for pnwkit_core::Method {
     }
 }
 
+#[cfg(any(feature = "sync", feature = "async", feature = "subscriptions"))]
 macro_rules! setup_request {
     ($client:ident, $request:ident) => {{
         let req = $client.request($request.method.to_reqwest_method(), $request.url.clone());

@@ -5,7 +5,10 @@ use std::{future::Future, pin::Pin};
 
 use pnwkit_core::{Headers, Kit, RateLimiter};
 
-use crate::{client::Client, socket::Socket};
+use crate::client::Client;
+
+#[cfg(feature = "subscriptions")]
+use crate::socket::Socket;
 
 #[cfg(feature = "async")]
 fn sleep(duration: std::time::Duration) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> {
