@@ -35,7 +35,7 @@ name = "pnwkit"
 harness = false
 
 [features]
-default = []
+default = ["async", "sync", "subscriptions"]
 async = ["dep:tokio"]
 sync = []
 subscriptions = ["dep:tokio", "dep:serde_urlencoded"]

@@ -1,10 +1,10 @@
 #[cfg(feature = "async")]
 use std::{future::Future, pin::Pin};
 
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
+
+#[cfg(any(feature = "async", feature = "sync"))]
+use std::time::Duration;
 
 #[cfg(feature = "subscriptions")]
 use crate::socket::Socket;

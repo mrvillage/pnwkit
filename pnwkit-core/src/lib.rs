@@ -23,6 +23,7 @@ pub use async_trait::async_trait;
 pub use config::Config;
 pub use dashmap::DashMap;
 pub use data::{Data, Object};
+#[cfg(feature = "subscriptions")]
 pub use event::Event;
 pub use field::{field, field_as, Field, FieldType};
 pub use kit::Kit;
@@ -36,5 +37,4 @@ pub use socket::Socket;
 #[cfg(feature = "subscriptions")]
 pub use subscription::{Subscription, SubscriptionEvent, SubscriptionModel};
 pub use value::Value;
-#[cfg(feature = "subscriptions")]
 pub use variable::{variable, Variable, VariableType};

@@ -1,7 +1,3 @@
-use serde_json::json;
-#[cfg(feature = "subscriptions")]
-use std::{sync::Arc, time::Duration};
-
 use crate::{
     data::QueryReturn,
     query::{Query, QueryType},
@@ -17,6 +13,10 @@ use crate::{
     to_query_string::ToQueryString,
     Object, Value,
 };
+use serde_json::json;
+use std::sync::Arc;
+#[cfg(feature = "subscriptions")]
+use std::time::Duration;
 
 type GetResult = Result<Data, String>;
 
