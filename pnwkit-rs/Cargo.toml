@@ -4,6 +4,7 @@ version = "3.0.0-alpha.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/mrvillage/pnwkit"
+description = "pnwkit bindings for Rust."
 
 [dependencies.pnwkit-core]
 path = "../pnwkit-core"

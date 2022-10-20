@@ -4,6 +4,7 @@ version = "0.1.0-alpha.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/mrvillage/pnwkit"
+description = "The core library for developing bindings for pnwkit."
 
 [dependencies.serde]
 version = "1.0"
