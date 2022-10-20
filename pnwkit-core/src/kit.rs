@@ -15,7 +15,7 @@ use crate::{
     data::SubscriptionAuthData,
     subscription::{Subscription, SubscriptionEvent, SubscriptionModel},
     to_query_string::ToQueryString,
-    Object,
+    Object, Value,
 };
 
 type GetResult = Result<Data, String>;
@@ -23,14 +23,16 @@ type GetResult = Result<Data, String>;
 #[cfg(feature = "subscriptions")]
 type SubscriptionResult = Result<Arc<Subscription>, String>;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Kit {
-    pub config: Config,
+    pub config: Arc<Config>,
 }
 
 impl Kit {
     pub fn new(config: Config) -> Self {
-        Self { config }
+        Self {
+            config: Arc::new(config),
+        }
     }
 
     #[cfg(feature = "async")]
@@ -235,7 +237,7 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     pub async fn subscribe(
-        &'static self,
+        &self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
     ) -> SubscriptionResult {
@@ -244,7 +246,7 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     pub async fn subscribe_with_filters(
-        &'static self,
+        &self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
         filters: Object,
@@ -254,12 +256,12 @@ impl Kit {
 
     #[cfg(feature = "subscriptions")]
     async fn subscribe_inner(
-        &'static self,
+        &self,
         model: SubscriptionModel,
         event: SubscriptionEvent,
         filters: Object,
     ) -> SubscriptionResult {
-        self.config.socket.init(self).await;
+        self.config.socket.init(self.clone()).await;
         let channel = self
             .request_subscription_channel(&model, &event, &filters)
             .await;
@@ -269,16 +271,17 @@ impl Kit {
 
         let subscription = Subscription::new(model, event, filters, channel.unwrap());
 
-        self.subscribe_request(subscription).await
+        self.subscribe_request(Arc::new(subscription)).await
     }
 
     #[cfg(feature = "subscriptions")]
-    async fn subscribe_request(&'static self, subscription: Subscription) -> SubscriptionResult {
-        if self.config.socket.get_connected().is_set().await {
-            let res = self.config.socket.connect(&self.config.socket_url).await;
+    pub async fn subscribe_request(&self, subscription: Arc<Subscription>) -> SubscriptionResult {
+        if !self.config.socket.get_connected().is_set().await {
+            let res = self.config.socket.connect_ref().await;
             if let Err(e) = res {
                 return Err(e);
             }
+            self.config.socket.start_ping_pong_task();
         }
 
         let mut channel = { subscription.channel.lock().await.clone() };
@@ -305,24 +308,27 @@ impl Kit {
         }
         let auth = auth.unwrap();
 
-        let subscription = Arc::new(subscription);
         self.config
             .socket
             .add_subscription(subscription.clone())
             .await;
 
-        let send = self.config.socket.send(
-            json!({
-                "event": "pusher:subscribe",
-                "data": {
-                    "channel": channel,
-                    "auth": auth.clone(),
-                }
-            })
-            .to_string(),
-        );
+        let send = self
+            .config
+            .socket
+            .send(
+                json!({
+                    "event": "pusher:subscribe",
+                    "data": {
+                        "channel": channel,
+                        "auth": auth.clone(),
+                    }
+                })
+                .to_string(),
+            )
+            .await;
 
-        if let Err(e) = send.await {
+        if let Err(e) = send {
             return Err(e);
         }
 
@@ -372,12 +378,15 @@ impl Kit {
             Err(err)
         } else {
             let response = response.unwrap();
-            let json: serde_json::Value = serde_json::from_str(&response.body).unwrap();
+            let json = serde_json::from_str::<Value>(&response.body)
+                .unwrap()
+                .as_object()
+                .unwrap();
             if let Some(err) = json.get("error") {
-                return Err(err.to_string());
+                return Err(err.value().as_string().unwrap());
             }
             if let Some(channel) = json.get("channel") {
-                return Ok(channel.to_string());
+                return Ok(channel.value().as_string().unwrap());
             }
             Err("malformed response".to_string())
         }
@@ -391,8 +400,8 @@ impl Kit {
             self.config.subscription_auth_url.clone(),
             Some(
                 serde_urlencoded::to_string([
-                    ("socket_id", self.config.socket.get_socket_id().await),
-                    ("channel_name", channel.to_owned()),
+                    ("socket_id", &self.config.socket.get_socket_id().await),
+                    ("channel_name", channel),
                 ])
                 .unwrap(),
             ),

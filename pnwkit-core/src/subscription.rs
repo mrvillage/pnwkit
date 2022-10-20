@@ -1,6 +1,6 @@
-use std::{fmt::Debug, future::Future, pin::Pin, sync::Arc};
+use std::{collections::VecDeque, fmt::Debug};
 
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{Mutex, Notify};
 
 use crate::{event::Event, Object};
 
@@ -64,7 +64,51 @@ impl ToString for SubscriptionEvent {
     }
 }
 
-pub type SubscriptionCallback = fn(&Object) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>;
+pub struct SubscriptionQueue {
+    queue: Mutex<VecDeque<Object>>,
+    notify: Notify,
+}
+
+impl SubscriptionQueue {
+    pub fn new() -> Self {
+        Self {
+            queue: Mutex::new(VecDeque::new()),
+            notify: Notify::new(),
+        }
+    }
+
+    pub async fn push(&self, object: Object) {
+        self.queue.lock().await.push_back(object);
+        self.notify.notify_waiters();
+    }
+
+    pub async fn pop(&self) -> Option<Object> {
+        self.wait().await;
+        self.queue.lock().await.pop_front()
+    }
+
+    pub async fn wait(&self) {
+        {
+            if self.queue.lock().await.is_empty() {
+                self.notify.notified()
+            } else {
+                return;
+            }
+        }
+        .await
+    }
+
+    pub async fn extend(&self, iter: impl Iterator<Item = Object>) {
+        self.queue.lock().await.extend(iter);
+        self.notify.notify_waiters();
+    }
+}
+
+impl Default for SubscriptionQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 pub struct Subscription {
     pub(crate) model: SubscriptionModel,
@@ -72,7 +116,7 @@ pub struct Subscription {
     pub(crate) filters: Object,
     pub channel: Mutex<String>,
     pub succeeded: Event,
-    pub callbacks: Arc<RwLock<Vec<SubscriptionCallback>>>,
+    pub queue: SubscriptionQueue,
 }
 
 impl Subscription {
@@ -88,16 +132,24 @@ impl Subscription {
             filters,
             channel: Mutex::new(channel),
             succeeded: Event::new(),
-            callbacks: Arc::new(RwLock::new(Vec::new())),
+            queue: SubscriptionQueue::new(),
         }
-    }
-
-    pub async fn add_callback(&self, callback: SubscriptionCallback) {
-        self.callbacks.write().await.push(callback);
     }
 
     pub(crate) async fn set_channel(&self, channel: String) {
         *self.channel.lock().await = channel;
+    }
+
+    pub async fn next(&self) -> Option<Object> {
+        self.queue.pop().await
+    }
+
+    pub async fn push(&self, object: Object) {
+        self.queue.push(object).await
+    }
+
+    pub async fn extend(&self, iter: impl Iterator<Item = Object>) {
+        self.queue.extend(iter).await
     }
 }
 

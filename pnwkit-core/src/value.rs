@@ -115,6 +115,13 @@ impl<'de> Visitor<'de> for ValueVisitor {
         }
         Ok(vec.into())
     }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::None)
+    }
 }
 
 impl Serialize for Value {
@@ -238,10 +245,26 @@ impl Value {
         }
     }
 
+    pub fn parse_object(&self) -> Option<Object> {
+        match self {
+            Value::Object(v) => Some(v.clone()),
+            Value::String(v) => serde_json::from_str(v).ok(),
+            _ => None,
+        }
+    }
+
     pub fn as_array(&self) -> Option<Vec<Value>> {
         match self {
             Value::Array(v) => Some(v.clone()),
             _ => None,
+        }
+    }
+
+    pub fn string_to_value(&self) -> Option<Value> {
+        if let Some(s) = self.as_str() {
+            serde_json::from_str::<Value>(s).ok()
+        } else {
+            None
         }
     }
 }

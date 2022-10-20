@@ -7,7 +7,7 @@ use crate::{event::Event, Kit, Subscription};
 // subscriptions: Arc<RwLock<DashMap<String, Arc<Subscription>>>>
 #[async_trait]
 pub trait Socket: Debug + Send + Sync + 'static {
-    async fn init(&self, kit: &'static Kit);
+    async fn init(&self, kit: Kit);
 
     async fn get_socket_id(&self) -> String;
 
@@ -23,11 +23,15 @@ pub trait Socket: Debug + Send + Sync + 'static {
 
     async fn send(&self, data: String) -> Result<(), String>;
 
-    async fn connect(&'static self, url: &str) -> Result<(), String>;
+    async fn connect_ref(&self) -> Result<(), String>;
 
-    async fn reconnect(&'static self) -> Result<(), String>;
+    async fn connect(self) -> Result<(), String>;
 
-    async fn ping_pong(&'static self);
+    async fn reconnect(&self) -> Result<(), String>;
 
-    async fn call_later_pong(&'static self);
+    async fn ping_pong(self);
+
+    async fn call_later_pong(self);
+
+    fn start_ping_pong_task(&self);
 }

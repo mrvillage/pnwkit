@@ -8,7 +8,7 @@ use pnwkit_core::{Headers, Kit, RateLimiter};
 use crate::{client::Client, socket::Socket};
 
 #[cfg(feature = "async")]
-fn sleep(duration: std::time::Duration) -> Pin<Box<dyn Future<Output = ()>>> {
+fn sleep(duration: std::time::Duration) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> {
     Box::pin(tokio::time::sleep(duration))
 }
 

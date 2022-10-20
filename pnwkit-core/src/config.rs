@@ -32,7 +32,7 @@ pub struct Config {
     pub headers: Headers,
     pub now: fn() -> u64,
     #[cfg(feature = "async")]
-    pub sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()>>>,
+    pub sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>,
     #[cfg(feature = "sync")]
     pub sleep_sync: fn(Duration) -> (),
     pub user_agent: String,
@@ -116,7 +116,10 @@ impl Config {
     }
 
     #[cfg(feature = "async")]
-    pub fn set_sleep(mut self, sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()>>>) -> Self {
+    pub fn set_sleep(
+        mut self,
+        sleep: fn(Duration) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>,
+    ) -> Self {
         self.sleep = sleep;
         self
     }

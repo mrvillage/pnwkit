@@ -34,7 +34,7 @@ pub use serde_json::{from_str as json_from_str, json};
 #[cfg(feature = "subscriptions")]
 pub use socket::Socket;
 #[cfg(feature = "subscriptions")]
-pub use subscription::{Subscription, SubscriptionCallback, SubscriptionEvent, SubscriptionModel};
+pub use subscription::{Subscription, SubscriptionEvent, SubscriptionModel};
 pub use value::Value;
 #[cfg(feature = "subscriptions")]
 pub use variable::{variable, Variable, VariableType};
