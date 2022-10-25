@@ -148,9 +148,33 @@ impl From<bool> for Value {
     }
 }
 
+impl From<Value> for bool {
+    fn from(v: Value) -> Self {
+        v.as_bool().unwrap()
+    }
+}
+
+impl From<&Value> for bool {
+    fn from(v: &Value) -> Self {
+        v.as_bool().unwrap()
+    }
+}
+
 impl From<i32> for Value {
     fn from(v: i32) -> Self {
         Self::Int(v)
+    }
+}
+
+impl From<Value> for i32 {
+    fn from(v: Value) -> Self {
+        v.as_i32().unwrap()
+    }
+}
+
+impl From<&Value> for i32 {
+    fn from(v: &Value) -> Self {
+        v.as_i32().unwrap()
     }
 }
 
@@ -160,9 +184,33 @@ impl From<i64> for Value {
     }
 }
 
+impl From<Value> for i64 {
+    fn from(v: Value) -> Self {
+        v.as_i32().unwrap() as i64
+    }
+}
+
+impl From<&Value> for i64 {
+    fn from(v: &Value) -> Self {
+        v.as_i32().unwrap() as i64
+    }
+}
+
 impl From<u64> for Value {
     fn from(v: u64) -> Self {
         Self::Int(v as i32)
+    }
+}
+
+impl From<Value> for u64 {
+    fn from(v: Value) -> Self {
+        v.as_i32().unwrap() as u64
+    }
+}
+
+impl From<&Value> for u64 {
+    fn from(v: &Value) -> Self {
+        v.as_i32().unwrap() as u64
     }
 }
 
@@ -172,9 +220,33 @@ impl From<f64> for Value {
     }
 }
 
+impl From<Value> for f64 {
+    fn from(v: Value) -> Self {
+        v.as_f64().unwrap()
+    }
+}
+
+impl From<&Value> for f64 {
+    fn from(v: &Value) -> Self {
+        v.as_f64().unwrap()
+    }
+}
+
 impl From<String> for Value {
     fn from(v: String) -> Self {
         Self::String(v)
+    }
+}
+
+impl From<Value> for String {
+    fn from(v: Value) -> Self {
+        v.as_string().unwrap()
+    }
+}
+
+impl From<&Value> for String {
+    fn from(v: &Value) -> Self {
+        v.as_string().unwrap()
     }
 }
 
@@ -190,15 +262,45 @@ impl From<Object> for Value {
     }
 }
 
+impl From<Value> for Object {
+    fn from(v: Value) -> Self {
+        v.as_object().unwrap()
+    }
+}
+
+impl From<&Value> for Object {
+    fn from(v: &Value) -> Self {
+        v.as_object().unwrap()
+    }
+}
+
 impl From<&str> for Value {
     fn from(v: &str) -> Self {
         Self::String(v.into())
     }
 }
 
+impl<'a> From<&'a Value> for &'a str {
+    fn from(v: &'a Value) -> Self {
+        v.as_str().unwrap()
+    }
+}
+
 impl From<Vec<Value>> for Value {
     fn from(v: Vec<Value>) -> Self {
         Self::Array(v)
+    }
+}
+
+impl From<Value> for Vec<Value> {
+    fn from(v: Value) -> Self {
+        v.as_array().unwrap()
+    }
+}
+
+impl From<&Value> for Vec<Value> {
+    fn from(v: &Value) -> Self {
+        v.as_array().unwrap()
     }
 }
 
