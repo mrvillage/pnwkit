@@ -132,11 +132,8 @@ impl Paginator {
             },
             Err(e) => return Err(e),
         }
-        let result = kit.get_with_variables(&self.query, &self.variables).await;
-        if let Err(e) = result {
-            return Err(e);
-        }
-        let result = result.unwrap().inner();
+        let result = kit.get_with_variables(&self.query, &self.variables).await?;
+        let result = result.inner();
         let result = result.get("__paginate").unwrap();
         self.result(result.value());
         Ok(())
@@ -152,11 +149,8 @@ impl Paginator {
             },
             Err(e) => return Err(e),
         }
-        let result = kit.get_with_variables_sync(&self.query, &self.variables);
-        if let Err(e) = result {
-            return Err(e);
-        }
-        let result = result.unwrap().inner();
+        let result = kit.get_with_variables_sync(&self.query, &self.variables)?;
+        let result = result.inner();
         let result = result.get("__paginate").unwrap();
         self.result(result.value());
         Ok(())

@@ -262,12 +262,9 @@ impl Kit {
         self.config.socket.init(self.clone()).await;
         let channel = self
             .request_subscription_channel(&model, &event, &filters)
-            .await;
-        if let Err(e) = channel {
-            return Err(e);
-        }
+            .await?;
 
-        let subscription = Subscription::new(model, event, filters, channel.unwrap());
+        let subscription = Subscription::new(model, event, filters, channel);
 
         self.subscribe_request(Arc::new(subscription)).await
     }
@@ -275,10 +272,7 @@ impl Kit {
     #[cfg(feature = "subscriptions")]
     pub async fn subscribe_request(&self, subscription: Arc<Subscription>) -> SubscriptionResult {
         if !self.config.socket.get_connected().is_set().await {
-            let res = self.config.socket.connect_ref().await;
-            if let Err(e) = res {
-                return Err(e);
-            }
+            self.config.socket.connect_ref().await?;
             self.config.socket.start_ping_pong_task();
         }
 
@@ -286,17 +280,13 @@ impl Kit {
         let auth = self.authorize_subscription(&channel).await;
         if let Err(e) = &auth {
             if e == "unauthorized" {
-                let res = self
+                channel = self
                     .request_subscription_channel(
                         &subscription.model,
                         &subscription.event,
                         &subscription.filters,
                     )
-                    .await;
-                if let Err(e) = res {
-                    return Err(e);
-                }
-                channel = res.unwrap();
+                    .await?;
                 subscription.set_channel(channel.clone()).await;
                 let auth = self.authorize_subscription(&channel).await;
                 if let Err(e) = &auth {
@@ -311,8 +301,7 @@ impl Kit {
             .add_subscription(subscription.clone())
             .await;
 
-        let send = self
-            .config
+        self.config
             .socket
             .send(
                 json!({
@@ -324,11 +313,7 @@ impl Kit {
                 })
                 .to_string(),
             )
-            .await;
-
-        if let Err(e) = send {
-            return Err(e);
-        }
+            .await?;
 
         let timeout =
             tokio::time::timeout(Duration::from_secs(60), subscription.succeeded.wait()).await;
@@ -371,23 +356,18 @@ impl Kit {
             Some(self.config.headers.clone()),
             Some(ContentType::Json),
         );
-        let response = self.config.client.request(&request).await;
-        if let Err(err) = response {
-            Err(err)
-        } else {
-            let response = response.unwrap();
-            let json = serde_json::from_str::<Value>(&response.body)
-                .unwrap()
-                .as_object()
-                .unwrap();
-            if let Some(err) = json.get("error") {
-                return Err(err.value().as_string().unwrap());
-            }
-            if let Some(channel) = json.get("channel") {
-                return Ok(channel.value().as_string().unwrap());
-            }
-            Err("malformed response".to_string())
+        let response = self.config.client.request(&request).await?;
+        let json = serde_json::from_str::<Value>(&response.body)
+            .unwrap()
+            .as_object()
+            .unwrap();
+        if let Some(err) = json.get("error") {
+            return Err(err.value().as_string().unwrap());
         }
+        if let Some(channel) = json.get("channel") {
+            return Ok(channel.value().as_string().unwrap());
+        }
+        Err("malformed response".to_string())
     }
 
     #[cfg(feature = "subscriptions")]
@@ -406,11 +386,7 @@ impl Kit {
             None,
             Some(ContentType::Form),
         );
-        let response = self.config.client.request(&request).await;
-        if let Err(e) = response {
-            return Err(e);
-        }
-        let response = response.unwrap();
+        let response = self.config.client.request(&request).await?;
         if response.status != 200 {
             return Err("unauthorized".into());
         }
