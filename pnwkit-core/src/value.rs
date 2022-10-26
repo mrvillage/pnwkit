@@ -351,9 +351,11 @@ impl Value {
     #[cfg(feature = "time")]
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
-            Value::String(v) => {
-                time::OffsetDateTime::parse(v, time::format_description::well_known::Iso8601).ok()
-            },
+            Value::String(v) => time::OffsetDateTime::parse(
+                v,
+                &time::format_description::well_known::Iso8601::DEFAULT,
+            )
+            .ok(),
             _ => None,
         }
     }
