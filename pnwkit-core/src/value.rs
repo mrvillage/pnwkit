@@ -343,7 +343,7 @@ impl Value {
         use bigdecimal::FromPrimitive;
 
         match self {
-            Value::Float(v) => bigdecimal::BigDecimal::from_f64(v).ok(),
+            Value::Float(v) => bigdecimal::BigDecimal::from_f64(v),
             _ => None,
         }
     }
