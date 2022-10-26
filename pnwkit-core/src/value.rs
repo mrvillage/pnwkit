@@ -352,7 +352,7 @@ impl Value {
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
             Value::String(v) => {
-                time::OffsetDateTime::parse(v, time::format_description::well_known::Iso8601()).ok()
+                time::OffsetDateTime::parse(v, time::format_description::well_known::Iso8601).ok()
             },
             _ => None,
         }
@@ -361,7 +361,9 @@ impl Value {
     #[cfg(feature = "chrono")]
     pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
         match self {
-            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v).ok(),
+            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v)
+                .ok()
+                .map(|v| v.with_timezone(&chrono::Utc)),
             _ => None,
         }
     }
