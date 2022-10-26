@@ -1,6 +1,6 @@
 [package]
 name = "pnwkit"
-version = "3.0.0-alpha.1"
+version = "3.0.0-alpha.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/mrvillage/pnwkit"
@@ -36,3 +36,7 @@ default = []
 async = ["pnwkit-core/async", "dep:tokio"]
 sync = ["reqwest/blocking", "pnwkit-core/sync"]
 subscriptions = ["pnwkit-core/subscriptions", "dep:tokio-tungstenite", "dep:tokio", "dep:futures-util"]
+uuid = ["pnwkit-core/uuid"]
+bigdecimal = ["pnwkit-core/bigdecimal"]
+time = ["pnwkit-core/time"]
+chrono = ["pnwkit-core/chrono"]

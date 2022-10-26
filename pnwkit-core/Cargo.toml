@@ -1,6 +1,6 @@
 [package]
 name = "pnwkit-core"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/mrvillage/pnwkit"
@@ -31,6 +31,23 @@ optional = true
 [dependencies.paste]
 version = "1.0"
 
+[dependencies.uuid]
+version = "1.1"
+optional = true
+
+[dependencies.bigdecimal]
+version = "0.3"
+optional = true
+
+[dependencies.time]
+version = "0.3"
+features = ["serde", "parsing"]
+optional = true
+
+[dependencies.chrono]
+version = "0.4"
+optional = true
+
 [dev-dependencies]
 criterion = "0.4.0"
 
@@ -39,7 +56,7 @@ name = "pnwkit"
 harness = false
 
 [features]
-default = ["async", "sync", "subscriptions"]
+default = ["async", "sync", "subscriptions", "uuid", "bigdecimal"]
 async = ["dep:tokio"]
 sync = []
 subscriptions = ["dep:tokio", "dep:serde_urlencoded"]

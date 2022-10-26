@@ -192,6 +192,8 @@ type VecValue = Vec<Value>;
 
 from!(
     bool, bool, Bool
+    i8, i8, Int
+    i16, i16, Int
     i32, i32, Int
     i64, i64, Int
     u64, u64, Int
@@ -219,7 +221,44 @@ impl<'a> From<&'a Value> for &'a str {
     }
 }
 
+impl<'a> From<&'a Value> for Option<&'a str> {
+    fn from(v: &'a Value) -> Self {
+        match v {
+            Value::None => None,
+            _ => Some(v.as_str().unwrap()),
+        }
+    }
+}
+
+#[cfg(feature = "uuid")]
+impl From<Value> for uuid::Uuid {
+    fn from(v: Value) -> Self {
+        v.as_uuid().unwrap()
+    }
+}
+
+#[cfg(feature = "bigdecimal")]
+impl From<Value> for bigdecimal::BigDecimal {
+    fn from(v: Value) -> Self {
+        v.as_bigdecimal().unwrap()
+    }
+}
+
 impl Value {
+    pub fn as_i8(&self) -> Option<i8> {
+        match self {
+            Value::Int(i) => Some(*i as i8),
+            _ => None,
+        }
+    }
+
+    pub fn as_i16(&self) -> Option<i16> {
+        match self {
+            Value::Int(i) => Some(*i as i16),
+            _ => None,
+        }
+    }
+
     pub fn as_i32(&self) -> Option<i32> {
         match self {
             Value::Int(v) => Some(*v),
@@ -287,6 +326,40 @@ impl Value {
     pub fn as_array(&self) -> Option<Vec<Value>> {
         match self {
             Value::Array(v) => Some(v.clone()),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "uuid")]
+    pub fn as_uuid(&self) -> Option<uuid::Uuid> {
+        match self {
+            Value::String(v) => uuid::Uuid::parse_str(v).ok(),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "bigdecimal")]
+    pub fn as_bigdecimal(&self) -> Option<bigdecimal::BigDecimal> {
+        use bigdecimal::FromPrimitive;
+
+        match self {
+            Value::Float(v) => bigdecimal::BigDecimal::from_f64(v).ok(),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "time")]
+    pub fn as_time(&self) -> Option<time::OffsetDateTime> {
+        match self {
+            Value::String(v) => time::serde::rfc3339::deserialize(v).ok(),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "chrono")]
+    pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
+        match self {
+            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v).ok(),
             _ => None,
         }
     }
