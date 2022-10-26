@@ -351,7 +351,9 @@ impl Value {
     #[cfg(feature = "time")]
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
-            Value::String(v) => time::serde::rfc3339::deserialize(v).ok(),
+            Value::String(v) => {
+                time::OffsetDateTime::parse(v, time::format_description::well_known::Iso8601()).ok()
+            },
             _ => None,
         }
     }
