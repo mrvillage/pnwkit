@@ -142,135 +142,68 @@ impl Serialize for Value {
     }
 }
 
-impl From<bool> for Value {
-    fn from(v: bool) -> Self {
-        Self::Bool(v)
-    }
+macro_rules! from {
+    ($($f:ident, $v:ident, $e:ident)*) => {
+        $(
+            impl From<$v> for Value {
+                fn from(v: $v) -> Self {
+                    Self::$e(v.try_into().unwrap())
+                }
+            }
+
+            impl From<Value> for $v {
+                fn from(v: Value) -> Self {
+                    paste::paste! {
+                        v.[<as_ $f>]().unwrap()
+                    }
+                }
+            }
+
+            impl From<&Value> for $v {
+                fn from(v: &Value) -> Self {
+                    paste::paste! {
+                        v.[<as_ $f>]().unwrap()
+                    }
+                }
+            }
+
+            impl From<Value> for Option<$v> {
+                fn from(v: Value) -> Self {
+                    match v {
+                        Value::None => None,
+                        _ => Some(paste::paste! { v.[<as_ $f>]().unwrap() }),
+                    }
+                }
+            }
+
+            impl From<&Value> for Option<$v> {
+                fn from(v: &Value) -> Self {
+                    match v {
+                        Value::None => None,
+                        _ => Some(paste::paste! { v.[<as_ $f>]().unwrap() }),
+                    }
+                }
+            }
+        )*
+    };
 }
 
-impl From<Value> for bool {
-    fn from(v: Value) -> Self {
-        v.as_bool().unwrap()
-    }
-}
+type VecValue = Vec<Value>;
 
-impl From<&Value> for bool {
-    fn from(v: &Value) -> Self {
-        v.as_bool().unwrap()
-    }
-}
-
-impl From<i32> for Value {
-    fn from(v: i32) -> Self {
-        Self::Int(v)
-    }
-}
-
-impl From<Value> for i32 {
-    fn from(v: Value) -> Self {
-        v.as_i32().unwrap()
-    }
-}
-
-impl From<&Value> for i32 {
-    fn from(v: &Value) -> Self {
-        v.as_i32().unwrap()
-    }
-}
-
-impl From<i64> for Value {
-    fn from(v: i64) -> Self {
-        Self::Int(v as i32)
-    }
-}
-
-impl From<Value> for i64 {
-    fn from(v: Value) -> Self {
-        v.as_i32().unwrap() as i64
-    }
-}
-
-impl From<&Value> for i64 {
-    fn from(v: &Value) -> Self {
-        v.as_i32().unwrap() as i64
-    }
-}
-
-impl From<u64> for Value {
-    fn from(v: u64) -> Self {
-        Self::Int(v as i32)
-    }
-}
-
-impl From<Value> for u64 {
-    fn from(v: Value) -> Self {
-        v.as_i32().unwrap() as u64
-    }
-}
-
-impl From<&Value> for u64 {
-    fn from(v: &Value) -> Self {
-        v.as_i32().unwrap() as u64
-    }
-}
-
-impl From<f64> for Value {
-    fn from(v: f64) -> Self {
-        Self::Float(v)
-    }
-}
-
-impl From<Value> for f64 {
-    fn from(v: Value) -> Self {
-        v.as_f64().unwrap()
-    }
-}
-
-impl From<&Value> for f64 {
-    fn from(v: &Value) -> Self {
-        v.as_f64().unwrap()
-    }
-}
-
-impl From<String> for Value {
-    fn from(v: String) -> Self {
-        Self::String(v)
-    }
-}
-
-impl From<Value> for String {
-    fn from(v: Value) -> Self {
-        v.as_string().unwrap()
-    }
-}
-
-impl From<&Value> for String {
-    fn from(v: &Value) -> Self {
-        v.as_string().unwrap()
-    }
-}
+from!(
+    bool, bool, Bool
+    i32, i32, Int
+    i64, i64, Int
+    u64, u64, Int
+    f64, f64, Float
+    string, String, String
+    object, Object, Object
+    array, VecValue, Array
+);
 
 impl From<Variable> for Value {
     fn from(v: Variable) -> Self {
         Self::Variable(v)
-    }
-}
-
-impl From<Object> for Value {
-    fn from(v: Object) -> Self {
-        Self::Object(v)
-    }
-}
-
-impl From<Value> for Object {
-    fn from(v: Value) -> Self {
-        v.as_object().unwrap()
-    }
-}
-
-impl From<&Value> for Object {
-    fn from(v: &Value) -> Self {
-        v.as_object().unwrap()
     }
 }
 
@@ -286,28 +219,24 @@ impl<'a> From<&'a Value> for &'a str {
     }
 }
 
-impl From<Vec<Value>> for Value {
-    fn from(v: Vec<Value>) -> Self {
-        Self::Array(v)
-    }
-}
-
-impl From<Value> for Vec<Value> {
-    fn from(v: Value) -> Self {
-        v.as_array().unwrap()
-    }
-}
-
-impl From<&Value> for Vec<Value> {
-    fn from(v: &Value) -> Self {
-        v.as_array().unwrap()
-    }
-}
-
 impl Value {
     pub fn as_i32(&self) -> Option<i32> {
         match self {
             Value::Int(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    pub fn as_i64(&self) -> Option<i64> {
+        match self {
+            Value::Int(v) => Some(*v as i64),
+            _ => None,
+        }
+    }
+
+    pub fn as_u64(&self) -> Option<u64> {
+        match self {
+            Value::Int(v) => Some(*v as u64),
             _ => None,
         }
     }
