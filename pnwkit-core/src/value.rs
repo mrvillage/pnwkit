@@ -244,6 +244,13 @@ impl From<Value> for bigdecimal::BigDecimal {
     }
 }
 
+#[cfg(feature = "bigdecimal")]
+impl From<&Value> for bigdecimal::BigDecimal {
+    fn from(v: &Value) -> Self {
+        v.as_bigdecimal().unwrap()
+    }
+}
+
 impl Value {
     pub fn as_i8(&self) -> Option<i8> {
         match self {
