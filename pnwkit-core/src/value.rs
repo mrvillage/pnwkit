@@ -333,7 +333,7 @@ impl Value {
     #[cfg(feature = "uuid")]
     pub fn as_uuid(&self) -> Option<uuid::Uuid> {
         match self {
-            Value::String(v) => uuid::Uuid::parse_str(v).ok(),
+            Value::String(v) => uuid::Uuid::parse_str(v.as_str()).ok(),
             _ => None,
         }
     }
@@ -343,7 +343,7 @@ impl Value {
         use bigdecimal::FromPrimitive;
 
         match self {
-            Value::Float(v) => bigdecimal::BigDecimal::from_f64(v),
+            Value::Float(v) => bigdecimal::BigDecimal::from_f64(*v),
             _ => None,
         }
     }
@@ -352,7 +352,7 @@ impl Value {
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
             Value::String(v) => time::OffsetDateTime::parse(
-                v,
+                v.as_str(),
                 &time::format_description::well_known::Iso8601::DEFAULT,
             )
             .ok(),
@@ -363,7 +363,7 @@ impl Value {
     #[cfg(feature = "chrono")]
     pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
         match self {
-            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v)
+            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v.as_str())
                 .ok()
                 .map(|v| v.with_timezone(&chrono::Utc)),
             _ => None,
