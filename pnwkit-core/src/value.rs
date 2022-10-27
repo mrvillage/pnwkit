@@ -251,6 +251,34 @@ impl From<&Value> for bigdecimal::BigDecimal {
     }
 }
 
+#[cfg(feature = "time")]
+impl From<Value> for time::OffsetDateTime {
+    fn from(v: Value) -> Self {
+        v.as_time().unwrap()
+    }
+}
+
+#[cfg(feature = "time")]
+impl From<&Value> for time::OffsetDateTime {
+    fn from(v: &Value) -> Self {
+        v.as_bigdecimal().unwrap()
+    }
+}
+
+#[cfg(feature = "chrono")]
+impl From<Value> for chrono::DateTime<chrono::Utc> {
+    fn from(v: Value) -> Self {
+        v.as_bigdecimal().unwrap()
+    }
+}
+
+#[cfg(feature = "chrono")]
+impl From<&Value> for chrono::DateTime<chrono::Utc> {
+    fn from(v: &Value) -> Self {
+        v.as_chrono().unwrap()
+    }
+}
+
 impl Value {
     pub fn as_i8(&self) -> Option<i8> {
         match self {
