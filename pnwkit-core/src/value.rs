@@ -261,14 +261,14 @@ impl From<Value> for time::OffsetDateTime {
 #[cfg(feature = "time")]
 impl From<&Value> for time::OffsetDateTime {
     fn from(v: &Value) -> Self {
-        v.as_bigdecimal().unwrap()
+        v.as_time().unwrap()
     }
 }
 
 #[cfg(feature = "chrono")]
 impl From<Value> for chrono::DateTime<chrono::Utc> {
     fn from(v: Value) -> Self {
-        v.as_bigdecimal().unwrap()
+        v.as_chrono().unwrap()
     }
 }
 
