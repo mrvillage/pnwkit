@@ -142,15 +142,21 @@ impl Serialize for Value {
     }
 }
 
-macro_rules! from {
-    ($($f:ident, $v:ident, $e:ident)*) => {
+macro_rules! into {
+    ($($v:ident, $e:ident)*) => {
         $(
             impl From<$v> for Value {
                 fn from(v: $v) -> Self {
                     Self::$e(v.try_into().unwrap())
                 }
             }
+        )*
+    };
+}
 
+macro_rules! from {
+    ($($f:ident, $v:ident)*) => {
+        $(
             impl From<Value> for $v {
                 fn from(v: Value) -> Self {
                     paste::paste! {
@@ -190,18 +196,57 @@ macro_rules! from {
 
 type VecValue = Vec<Value>;
 
-from!(
-    bool, bool, Bool
-    i8, i8, Int
-    i16, i16, Int
-    i32, i32, Int
-    i64, i64, Int
-    u64, u64, Int
-    f64, f64, Float
-    string, String, String
-    object, Object, Object
-    array, VecValue, Array
+into!(
+    bool, Bool
+    i8, Int
+    i16, Int
+    i32, Int
+    i64, Int
+    u64, Int
+    f64, Float
+    String, String
+    Object, Object
+    VecValue, Array
 );
+
+from!(
+    bool, bool
+    i8, i8
+    i16, i16
+    i32, i32
+    i64, i64
+    u64, u64
+    f64, f64
+    string, String
+    object, Object
+    array, VecValue
+);
+
+#[cfg(feature = "uuid")]
+use uuid::Uuid;
+
+#[cfg(feature = "uuid")]
+from!(uuid, Uuid);
+
+#[cfg(feature = "bigdecimal")]
+use bigdecimal::BigDecimal;
+
+#[cfg(feature = "bigdecimal")]
+from!(bigdecimal, BigDecimal);
+
+#[cfg(feature = "time")]
+use time::OffsetDateTime;
+
+#[cfg(feature = "time")]
+from!(time, OffsetDateTime);
+
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
+
+#[cfg(feature = "chrono")]
+type Chrono = DateTime<Utc>;
+#[cfg(feature = "chrono")]
+from!(chrono, Chrono);
 
 impl From<Variable> for Value {
     fn from(v: Variable) -> Self {
@@ -227,55 +272,6 @@ impl<'a> From<&'a Value> for Option<&'a str> {
             Value::None => None,
             _ => Some(v.as_str().unwrap()),
         }
-    }
-}
-
-#[cfg(feature = "uuid")]
-impl From<Value> for uuid::Uuid {
-    fn from(v: Value) -> Self {
-        v.as_uuid().unwrap()
-    }
-}
-
-#[cfg(feature = "bigdecimal")]
-impl From<Value> for bigdecimal::BigDecimal {
-    fn from(v: Value) -> Self {
-        v.as_bigdecimal().unwrap()
-    }
-}
-
-#[cfg(feature = "bigdecimal")]
-impl From<&Value> for bigdecimal::BigDecimal {
-    fn from(v: &Value) -> Self {
-        v.as_bigdecimal().unwrap()
-    }
-}
-
-#[cfg(feature = "time")]
-impl From<Value> for time::OffsetDateTime {
-    fn from(v: Value) -> Self {
-        v.as_time().unwrap()
-    }
-}
-
-#[cfg(feature = "time")]
-impl From<&Value> for time::OffsetDateTime {
-    fn from(v: &Value) -> Self {
-        v.as_time().unwrap()
-    }
-}
-
-#[cfg(feature = "chrono")]
-impl From<Value> for chrono::DateTime<chrono::Utc> {
-    fn from(v: Value) -> Self {
-        v.as_chrono().unwrap()
-    }
-}
-
-#[cfg(feature = "chrono")]
-impl From<&Value> for chrono::DateTime<chrono::Utc> {
-    fn from(v: &Value) -> Self {
-        v.as_chrono().unwrap()
     }
 }
 
