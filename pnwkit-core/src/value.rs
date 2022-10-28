@@ -278,14 +278,18 @@ impl<'a> From<&'a Value> for Option<&'a str> {
 impl Value {
     pub fn as_i8(&self) -> Option<i8> {
         match self {
-            Value::Int(i) => Some(*i as i8),
+            Value::Int(v) => Some(*v as i8),
+            Value::Float(v) => Some(*v as i8),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
 
     pub fn as_i16(&self) -> Option<i16> {
         match self {
-            Value::Int(i) => Some(*i as i16),
+            Value::Int(v) => Some(*v as i16),
+            Value::Float(v) => Some(*v as i16),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
@@ -293,6 +297,8 @@ impl Value {
     pub fn as_i32(&self) -> Option<i32> {
         match self {
             Value::Int(v) => Some(*v),
+            Value::Float(v) => Some(*v as i32),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
@@ -300,6 +306,8 @@ impl Value {
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Int(v) => Some(*v as i64),
+            Value::Float(v) => Some(*v as i64),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
@@ -307,13 +315,17 @@ impl Value {
     pub fn as_u64(&self) -> Option<u64> {
         match self {
             Value::Int(v) => Some(*v as u64),
+            Value::Float(v) => Some(*v as u64),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
 
     pub fn as_f64(&self) -> Option<f64> {
         match self {
+            Value::Int(v) => Some(*v as f64),
             Value::Float(v) => Some(*v),
+            Value::String(v) => v.parse().ok(),
             _ => None,
         }
     }
