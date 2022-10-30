@@ -9,7 +9,7 @@ use crate::{
 pub enum Value {
     None,
     Bool(bool),
-    Int(i32),
+    Int(i64),
     Float(f64),
     String(String),
     Variable(Variable),
@@ -132,7 +132,7 @@ impl Serialize for Value {
         match self {
             Value::None => serializer.serialize_none(),
             Value::Bool(b) => serializer.serialize_bool(*b),
-            Value::Int(i) => serializer.serialize_i32(*i),
+            Value::Int(i) => serializer.serialize_i64(*i),
             Value::Float(f) => serializer.serialize_f64(*f),
             Value::String(s) => serializer.serialize_str(s),
             Value::Variable(v) => v.serialize(serializer),
@@ -296,7 +296,7 @@ impl Value {
 
     pub fn as_i32(&self) -> Option<i32> {
         match self {
-            Value::Int(v) => Some(*v),
+            Value::Int(v) => Some(*v as i32),
             Value::Float(v) => Some(*v as i32),
             Value::String(v) => v.parse().ok(),
             _ => None,
@@ -305,7 +305,7 @@ impl Value {
 
     pub fn as_i64(&self) -> Option<i64> {
         match self {
-            Value::Int(v) => Some(*v as i64),
+            Value::Int(v) => Some(*v),
             Value::Float(v) => Some(*v as i64),
             Value::String(v) => v.parse().ok(),
             _ => None,
@@ -383,10 +383,14 @@ impl Value {
 
     #[cfg(feature = "bigdecimal")]
     pub fn as_bigdecimal(&self) -> Option<bigdecimal::BigDecimal> {
+        use std::str::FromStr;
+
         use bigdecimal::FromPrimitive;
 
         match self {
             Value::Float(v) => bigdecimal::BigDecimal::from_f64(*v),
+            Value::Int(v) => bigdecimal::BigDecimal::from_i64(*v),
+            Value::String(v) => bigdecimal::BigDecimal::from_str(v.as_str()).ok(),
             _ => None,
         }
     }
@@ -394,11 +398,23 @@ impl Value {
     #[cfg(feature = "time")]
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
-            Value::String(v) => time::OffsetDateTime::parse(
-                v.as_str(),
-                &time::format_description::well_known::Iso8601::DEFAULT,
-            )
-            .ok(),
+            Value::String(v) => {
+                if v.as_str() == "0000-00-00" || v.starts_with("-") {
+                    Some(time::OffsetDateTime::UNIX_EPOCH)
+                } else if v.len() == 10 {
+                    time::OffsetDateTime::parse(
+                        format!("{}T00:00:00Z", v).as_str(),
+                        &time::format_description::well_known::Iso8601::DEFAULT,
+                    )
+                    .ok()
+                } else {
+                    time::OffsetDateTime::parse(
+                        v.as_str(),
+                        &time::format_description::well_known::Iso8601::DEFAULT,
+                    )
+                    .ok()
+                }
+            },
             _ => None,
         }
     }
@@ -406,9 +422,16 @@ impl Value {
     #[cfg(feature = "chrono")]
     pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
         match self {
-            Value::String(v) => chrono::DateTime::parse_from_rfc3339(v.as_str())
-                .ok()
-                .map(|v| v.with_timezone(&chrono::Utc)),
+            Value::String(v) => if v.len() == 10 {
+                chrono::DateTime::parse_from_rfc3339(format!("{}T00:00:00Z", v).as_str())
+                    .ok()
+                    .map(|v| v.with_timezone(&chrono::Utc))
+            } else {
+                chrono::DateTime::parse_from_rfc3339(v.as_str())
+                    .ok()
+                    .map(|v| v.with_timezone(&chrono::Utc))
+            }
+            .ok(),
             _ => None,
         }
     }
@@ -417,7 +440,14 @@ impl Value {
         if let Some(s) = self.as_str() {
             serde_json::from_str::<Value>(s).ok()
         } else {
-            None
+            Some(self.clone())
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self {
+            Value::String(_) => true,
+            _ => false,
         }
     }
 }

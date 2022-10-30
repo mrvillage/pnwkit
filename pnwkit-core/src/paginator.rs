@@ -163,7 +163,7 @@ impl Paginator {
         }
         let page = self.variables.get("__page".into()).unwrap();
         let page = match page {
-            Value::Int(i) => i,
+            Value::Int(i) => i as i32,
             _ => {
                 if self.paginator_info.is_none() {
                     return Err("invalid paginator variable".into());
