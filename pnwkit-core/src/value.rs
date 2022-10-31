@@ -333,6 +333,7 @@ impl Value {
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Value::Bool(v) => Some(*v),
+            Value::Int(v) => Some(*v != 0),
             _ => None,
         }
     }
