@@ -140,10 +140,7 @@ impl SocketTrait for Socket {
     }
 
     async fn reconnect(&self) -> Result<(), String> {
-        let res = self.clone().connect().await;
-        if let Err(err) = res {
-            return Err(err);
-        }
+        self.connect_ref().await?;
         {
             *self.state.ponged.lock().await = true;
             *self.state.pinged.lock().await = false;
@@ -152,9 +149,7 @@ impl SocketTrait for Socket {
         for sub in self.state.subscriptions.read().await.iter() {
             let (_, subscription) = sub.pair();
             subscription.succeeded.clear().await;
-            if let Err(err) = kit.subscribe_request(subscription.clone()).await {
-                return Err(err);
-            }
+            kit.subscribe_request(subscription.clone()).await?;
         }
         Ok(())
     }

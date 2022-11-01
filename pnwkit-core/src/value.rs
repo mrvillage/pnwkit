@@ -400,7 +400,7 @@ impl Value {
     pub fn as_time(&self) -> Option<time::OffsetDateTime> {
         match self {
             Value::String(v) => {
-                if v.as_str() == "0000-00-00" || v.starts_with("-") {
+                if v.as_str() == "0000-00-00" || v.starts_with('-') {
                     Some(time::OffsetDateTime::UNIX_EPOCH)
                 } else if v.len() == 10 {
                     time::OffsetDateTime::parse(
@@ -423,16 +423,17 @@ impl Value {
     #[cfg(feature = "chrono")]
     pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
         match self {
-            Value::String(v) => if v.len() == 10 {
-                chrono::DateTime::parse_from_rfc3339(format!("{}T00:00:00Z", v).as_str())
-                    .ok()
-                    .map(|v| v.with_timezone(&chrono::Utc))
-            } else {
-                chrono::DateTime::parse_from_rfc3339(v.as_str())
-                    .ok()
-                    .map(|v| v.with_timezone(&chrono::Utc))
-            }
-            .ok(),
+            Value::String(v) => {
+                if v.len() == 10 {
+                    chrono::DateTime::parse_from_rfc3339(format!("{}T00:00:00Z", v).as_str())
+                        .ok()
+                        .map(|v| v.with_timezone(&chrono::Utc))
+                } else {
+                    chrono::DateTime::parse_from_rfc3339(v.as_str())
+                        .ok()
+                        .map(|v| v.with_timezone(&chrono::Utc))
+                }
+            },
             _ => None,
         }
     }
@@ -446,9 +447,6 @@ impl Value {
     }
 
     pub fn is_string(&self) -> bool {
-        match self {
-            Value::String(_) => true,
-            _ => false,
-        }
+        matches!(self, Value::String(_))
     }
 }
