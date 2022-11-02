@@ -424,7 +424,9 @@ impl Value {
     pub fn as_chrono(&self) -> Option<chrono::DateTime<chrono::Utc>> {
         match self {
             Value::String(v) => {
-                if v.len() == 10 {
+                if v.as_str() == "0000-00-00" || v.starts_with('-') {
+                    Some(chrono::DateTime::<chrono::Utc>::MIN_UTC)
+                } else if v.len() == 10 {
                     chrono::DateTime::parse_from_rfc3339(format!("{}T00:00:00Z", v).as_str())
                         .ok()
                         .map(|v| v.with_timezone(&chrono::Utc))
