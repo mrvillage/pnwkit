@@ -6,6 +6,7 @@ use crate::{event::Event, Object};
 
 #[derive(Clone, Debug)]
 pub enum SubscriptionModel {
+    Account,
     Alliance,
     AlliancePosition,
     Bankrec,
@@ -26,6 +27,7 @@ pub enum SubscriptionModel {
 impl ToString for SubscriptionModel {
     fn to_string(&self) -> String {
         match self {
+            Self::Account => "account",
             Self::Alliance => "alliance",
             Self::AlliancePosition => "alliance_position",
             Self::Bankrec => "bankrec",
