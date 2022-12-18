@@ -85,7 +85,12 @@ impl Config {
     }
 
     pub fn to_kit(self) -> Kit {
-        let now = || 1;
+        let now = || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+        };
         let config = pnwkit_core::Config {
             api_key: self.api_key,
             verified_bot_key: self.verified_bot_key,
