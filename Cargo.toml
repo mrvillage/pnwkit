@@ -2,5 +2,4 @@
 members = [
 	"pnwkit-core",
     "pnwkit-rs",
-    "pnwkit-test",
 ]
