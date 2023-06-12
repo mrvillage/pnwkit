@@ -47,7 +47,7 @@ impl RateLimiter {
             return 0;
         }
         if self.remaining == 0 {
-            self.reset - current_time as u64 + 1
+            self.reset - current_time + 1
         } else {
             self.remaining -= 1;
             0
