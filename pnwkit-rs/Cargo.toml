@@ -18,7 +18,7 @@ default-features = false
 
 [dependencies.tokio-tungstenite]
 version = "0.19"
-features = ["rustls"]
+features = ["rustls-tls-webpki-roots"]
 optional = true
 
 [dependencies.tokio]
