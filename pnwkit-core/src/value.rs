@@ -202,7 +202,13 @@ into!(
     i16, Int
     i32, Int
     i64, Int
+    i128, Int
+    u8, Int
+    u16, Int
+    u32, Int
     u64, Int
+    u128, Int
+    f32, Float
     f64, Float
     String, String
     Object, Object
@@ -215,7 +221,13 @@ from!(
     i16, i16
     i32, i32
     i64, i64
+    i128, i128
+    u8, u8
+    u16, u16
+    u32, u32
     u64, u64
+    u128, u128
+    f32, f32
     f64, f64
     string, String
     object, Object
@@ -312,10 +324,64 @@ impl Value {
         }
     }
 
+    pub fn as_i128(&self) -> Option<i128> {
+        match self {
+            Value::Int(v) => Some(*v as i128),
+            Value::Float(v) => Some(*v as i128),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
+    pub fn as_u8(&self) -> Option<u8> {
+        match self {
+            Value::Int(v) => Some(*v as u8),
+            Value::Float(v) => Some(*v as u8),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
+    pub fn as_u16(&self) -> Option<u16> {
+        match self {
+            Value::Int(v) => Some(*v as u16),
+            Value::Float(v) => Some(*v as u16),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
+    pub fn as_u32(&self) -> Option<u32> {
+        match self {
+            Value::Int(v) => Some(*v as u32),
+            Value::Float(v) => Some(*v as u32),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
     pub fn as_u64(&self) -> Option<u64> {
         match self {
             Value::Int(v) => Some(*v as u64),
             Value::Float(v) => Some(*v as u64),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
+    pub fn as_u128(&self) -> Option<u128> {
+        match self {
+            Value::Int(v) => Some(*v as u128),
+            Value::Float(v) => Some(*v as u128),
+            Value::String(v) => v.parse().ok(),
+            _ => None,
+        }
+    }
+
+    pub fn as_f32(&self) -> Option<f32> {
+        match self {
+            Value::Int(v) => Some(*v as f32),
+            Value::Float(v) => Some(*v as f32),
             Value::String(v) => v.parse().ok(),
             _ => None,
         }
