@@ -22,6 +22,7 @@ pub enum SubscriptionModel {
     Treaty,
     WarAttack,
     War,
+    Tradeprice,
 }
 
 impl ToString for SubscriptionModel {
@@ -43,6 +44,7 @@ impl ToString for SubscriptionModel {
             Self::Treaty => "treaty",
             Self::WarAttack => "warattack",
             Self::War => "war",
+            Self::Tradeprice => "tradeprice",
         }
         .into()
     }
